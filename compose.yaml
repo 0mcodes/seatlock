@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: seatlock-db
+    environment:
+      POSTGRES_DB: seatlock
+      POSTGRES_USER: seatlock
+      POSTGRES_PASSWORD: seatlock_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

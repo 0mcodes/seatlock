@@ -1,0 +1,128 @@
+// SeatLock ERD. Paste into https://dbdiagram.io to render.
+
+Table users {
+  id bigint [pk, increment]
+  email varchar(255) [not null, unique]
+  password_hash varchar(255) [not null]
+  role varchar(20) [not null, note: 'ATTENDEE | ADMIN']
+  created_at timestamptz [not null]
+}
+
+Table venues {
+  id bigint [pk, increment]
+  name varchar(200) [not null]
+  city varchar(100) [not null]
+  address varchar(300)
+
+  indexes {
+    city
+  }
+}
+
+Table events {
+  id bigint [pk, increment]
+  venue_id bigint [not null]
+  title varchar(200) [not null]
+  category varchar(50)
+  starts_at timestamptz [not null]
+  status varchar(20) [not null, note: 'DRAFT | ON_SALE | SOLD_OUT | CANCELLED']
+
+  indexes {
+    (status, starts_at)
+    venue_id
+  }
+}
+
+Table venue_seats {
+  id bigint [pk, increment]
+  venue_id bigint [not null]
+  section varchar(20) [not null]
+  row_label varchar(10) [not null]
+  seat_number int [not null]
+  tier varchar(20) [not null, note: 'VIP | STANDARD']
+
+  indexes {
+    (venue_id, section, row_label, seat_number) [unique]
+  }
+}
+
+Table event_seats {
+  id bigint [pk, increment]
+  event_id bigint [not null]
+  venue_seat_id bigint [not null]
+  status varchar(20) [not null, note: 'AVAILABLE | HELD | BOOKED']
+  price numeric(10,2) [not null]
+  version bigint [not null, default: 0, note: 'optimistic lock']
+
+  indexes {
+    (event_id, venue_seat_id) [unique]
+    (event_id, status)
+  }
+}
+
+Table seat_holds {
+  id bigint [pk, increment]
+  event_seat_id bigint [not null, unique, note: 'one active hold per seat']
+  user_id bigint [not null]
+  expires_at timestamptz [not null]
+  created_at timestamptz [not null]
+
+  indexes {
+    expires_at
+    user_id
+  }
+}
+
+Table bookings {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  event_id bigint [not null]
+  status varchar(20) [not null, note: 'CONFIRMED | CANCELLED']
+  total_amount numeric(10,2) [not null]
+  idempotency_key varchar(64) [not null]
+  created_at timestamptz [not null]
+
+  indexes {
+    (user_id, idempotency_key) [unique]
+    (user_id, created_at)
+  }
+}
+
+Table booking_items {
+  id bigint [pk, increment]
+  booking_id bigint [not null]
+  event_seat_id bigint [not null, note: 'partial unique index in schema.sql: unique where status = ACTIVE']
+  price numeric(10,2) [not null]
+  status varchar(20) [not null, note: 'ACTIVE | RELEASED']
+
+  indexes {
+    booking_id
+    event_seat_id
+  }
+}
+
+Table waitlist_entries {
+  id bigint [pk, increment]
+  event_id bigint [not null]
+  user_id bigint [not null]
+  status varchar(20) [not null, note: 'WAITING | NOTIFIED | EXPIRED']
+  created_at timestamptz [not null]
+
+  indexes {
+    (event_id, user_id) [unique]
+    (event_id, status, created_at)
+  }
+}
+
+Ref: events.venue_id > venues.id
+Ref: venue_seats.venue_id > venues.id
+Ref: event_seats.event_id > events.id
+Ref: event_seats.venue_seat_id > venue_seats.id
+Ref: seat_holds.event_seat_id - event_seats.id
+Ref: seat_holds.user_id > users.id
+Ref: bookings.user_id > users.id
+Ref: bookings.event_id > events.id
+Ref: booking_items.booking_id > bookings.id
+Ref: booking_items.event_seat_id > event_seats.id
+Ref: waitlist_entries.event_id > events.id
+Ref: waitlist_entries.user_id > users.id
