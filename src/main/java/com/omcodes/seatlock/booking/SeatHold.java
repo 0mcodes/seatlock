@@ -18,7 +18,7 @@ import java.time.Instant;
 public class SeatHold {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long Id;
+    private Long Id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "event_seat_id",nullable = false,unique = true)
