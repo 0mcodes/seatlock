@@ -11,7 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 @Entity
-@Table(name="seat_hold")
+@Table(name="seat_holds")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 
